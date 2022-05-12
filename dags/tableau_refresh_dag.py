@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task # DAG and task decorators for interfacing with the TaskFlow API
+from airflow.models import Variable
 
 import tableauserverclient as tsc
 import pandas as pd
@@ -24,20 +25,10 @@ def tableau_refresh():
     ### Basic ETL Dag
     Kicks off refresh extract.
     """
-
-    user = "blankartz@amendllc.com"
-    password = "<pass>"
-    site_id = "statewidesafetysystems"
-
-    # Ben
-    #token_name = "tableau-refresh-test"
-    #token_value = "74l5rXGSTfCt8+Ui/HacXQ==:uxxROtbQvKx3kWbiP6oqvWfmFb1jyfW7"
-
-    # Andrea
-    token_name = "refresh-token-ag"
-    token_value = "53MOfbqBRxSxCgMCrYWukw==:YE5j6jKyT2l3aI5U7Ud8D4VC32b2Ef2f"
-
-    server_name = 'https://10ay.online.tableau.com/'
+    site_id = Variable.get('TABLEAU_SITE_ID')
+    token_name = Variable.get('TABLEAU_TOKEN_NAME')
+    token_value = Variable.get('TABLEAU_TOKEN_VALUE')
+    server_name = Variable.get('TABLEAU_SERVER_NAME')
 
     @task()
     def update_tableau():
@@ -45,8 +36,8 @@ def tableau_refresh():
         #### Update Tableau
         Finds list of dashboards and kicks off the updats.
         """
-        server = tu._connect_server(server_name)
-        tu._connection_builder(token_name,token_value,site_id,server)
+        #server = tu._connect_server(server_name)
+        #tu._connection_builder(token_name,token_value,site_id,server)
         pattern = "Financial Statements - Sandbox"
         df = tu.retreive_workbook_list(pattern,server_name,token_name,token_value,site_id)
         job_ids = tu.update_all_workbooks(df,server_name,token_name,token_value,site_id)

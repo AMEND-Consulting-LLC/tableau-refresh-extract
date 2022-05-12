@@ -23,8 +23,9 @@ def _connect_server(name):
         #print("\tProduct version: {0}".format(s_info.product_version))
         #print("\tREST API version: {0}".format(s_info.rest_api_version))
         #print("\tBuild number: {0}".format(s_info.build_number))
-    except:
+    except BaseException as e:
         print("Error connecting to server.")
+        print(e)
         raise
     return server
 
@@ -68,8 +69,9 @@ def _refresh_workbook(workbook_id,server,tableau_auth):
         try:
             workbook = server.workbooks.get_by_id(workbook_id)    
             print("Found workbook: {}".format(workbook.name))
-        except:
+        except BaseException as e:
             print("Error finding workbook: {}".format())
+            print(e)
             raise
 
         # call the update method        
@@ -77,9 +79,9 @@ def _refresh_workbook(workbook_id,server,tableau_auth):
             job = server.workbooks.refresh(workbook)
             print("Job started {}".format(job.id))
             job_id = job.id
-        except:
+        except BaseException as e:
             #consider re writting this error to 
-            print("Error executing job")
+            print("Error executing job", e)
             raise
     return job
 
@@ -118,7 +120,7 @@ def update_all_workbooks(workbook_df,server_name,token_name,token_value,site_id,
         #print(row)
         try:
             job_id = _refresh_workbook(row.wb_id,server,auth)
-            job_ids.append(job_id)
+            job_ids.append(job_id.id)
             #print(job_ids.id)
         except:
             error_flag = True
@@ -142,9 +144,14 @@ def await_by_group(job_ids,server_name,token_name,token_value,site_id,report_job
         return 1
 
     for job in job_ids:
-        job_id = job.id
+        job_id = job
         print("Checking job id: {}".format(job_id))
-        job_details = _await_job(job_id,server,auth,timeout=600)
+        try:
+            job_details = _await_job(job_id,server,auth,timeout=600)
+        except BaseException as e:
+            print("Error awaiting job: {}".format(job))
+            print(e)
+            continue
         print("Job id: {0} completed at: {1} with code {2}".format(job_details.id,
                                             job_details.completed_at,
                                             job_details.finish_code))
