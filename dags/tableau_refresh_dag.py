@@ -8,18 +8,14 @@ import tableauserverclient as tsc
 import pandas as pd
 import tableau_utils as tu
 
+args = {'pattern': "Financial Statements - Sandbox"}
+
 @dag(
-    # This defines how often your DAG will run, or the schedule by which your DAG runs. In this case, this DAG
-    # will run every 30 mins
-    schedule_interval=timedelta(minutes=30),
-    # This DAG is set to run for the first time on January 1, 2021. Best practice is to use a static
-    # start_date. Subsequent DAG runs are instantiated based on scheduler_interval
-    start_date=datetime(2021, 1, 1),
-    # When catchup=False, your DAG will only run for the latest schedule_interval. In this case, this means
-    # that tasks will not be run between January 1, 2021 and 30 mins ago. When turned on, this DAG's first
-    # run will be for the next 30 mins, per the schedule_interval
+    schedule_interval='@once',
+    start_date=datetime(2020,1,1),
     catchup=False,
-    tags=['tableau']) # If set, this tag is shown in the DAG view of the Airflow UI
+    tags=['tableau'],
+    default_args = args)
 def tableau_refresh():
     """
     ### Basic ETL Dag
@@ -31,16 +27,15 @@ def tableau_refresh():
     server_name = Variable.get('TABLEAU_SERVER_NAME')
 
     @task()
-    def update_tableau():
+    def update_tableau(**kwargs):
         """
         #### Update Tableau
         Finds list of dashboards and kicks off the updats.
         """
-        #server = tu._connect_server(server_name)
-        #tu._connection_builder(token_name,token_value,site_id,server)
         pattern = "Financial Statements - Sandbox"
         df = tu.retreive_workbook_list(pattern,server_name,token_name,token_value,site_id)
-        job_ids = tu.update_all_workbooks(df,server_name,token_name,token_value,site_id)
+        #job_ids = tu.update_all_workbooks(df,server_name,token_name,token_value,site_id)
+        job_is = [1]
         return job_ids
 
     @task() # multiple_outputs=True unrolls dictionaries into separate XCom values
